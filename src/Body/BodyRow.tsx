@@ -4,7 +4,7 @@ import Cell from '../Cell';
 import TableContext from '../context/TableContext';
 import BodyContext from '../context/BodyContext';
 import { getColumnsKey } from '../utils/valueUtil';
-import { ColumnType, CustomizeComponent, GetComponentProps, Key, GetRowKey } from '../interface';
+import type { ColumnType, CustomizeComponent, GetComponentProps, Key, GetRowKey } from '../interface';
 import ExpandedRow from './ExpandedRow';
 
 export interface BodyRowProps<RecordType> {
@@ -22,6 +22,8 @@ export interface BodyRowProps<RecordType> {
   rowKey: React.Key;
   getRowKey: GetRowKey<RecordType>;
   childrenColumnName: string;
+  onMouseEnter: React.MouseEventHandler<HTMLElement>;
+  onMouseLeave: React.MouseEventHandler<HTMLElement>;
 }
 
 function BodyRow<RecordType extends { children?: readonly RecordType[] }>(
@@ -99,6 +101,14 @@ function BodyRow<RecordType extends { children?: readonly RecordType[] }>(
     computeRowClassName = rowClassName(record, index, indent);
   }
 
+  const [rowHoverClassName, setRowHoverClassName] = React.useState('');
+  const onMouseEnter = () => {
+    setRowHoverClassName(`${prefixCls}-row-hover`);
+  };
+  const onMouseLeave = () => {
+    setRowHoverClassName('');
+  };
+
   const columnsKey = getColumnsKey(flattenColumns);
   const baseRowNode = (
     <RowComponent
@@ -110,12 +120,15 @@ function BodyRow<RecordType extends { children?: readonly RecordType[] }>(
         `${prefixCls}-row-level-${indent}`,
         computeRowClassName,
         additionalProps && additionalProps.className,
+        rowHoverClassName,
       )}
       style={{
         ...style,
         ...(additionalProps ? additionalProps.style : null),
       }}
       onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       {flattenColumns.map((column: ColumnType<RecordType>, colIndex) => {
         const { render, dataIndex, className: columnClassName } = column;
