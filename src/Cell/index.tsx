@@ -279,12 +279,40 @@ const MemoCell = React.memo(
   },
 );
 
-/** Inject hover data here, we still wish MemoCell keep simple `shouldCellUpdate` logic */
-const WrappedCell = React.forwardRef((props: CellProps<any>, ref: React.Ref<any>) => {
+/**
+ * We pre-render cell content but it may not need re-render with shouldCellUpdate
+ */
+const RenderCell = React.forwardRef((props: CellProps<any>, ref: React.Ref<any>) => {
   const { onHover, startRow, endRow } = React.useContext(HoverContext);
+  const { index, dataIndex, record, render, children } = props;
 
+  // ======================= Cell =======================
+  let cellProps: CellType<any>;
+  let childNode: React.ReactNode;
+
+  if (validateValue(children)) {
+    childNode = children;
+  } else {
+    const value = getPathValue<object | React.ReactNode, any>(record, dataIndex);
+
+    // Customize render node
+    childNode = value;
+    if (render) {
+      const renderData = render(value, record, index);
+
+      if (isRenderCell(renderData)) {
+        childNode = renderData.children;
+        cellProps = renderData.props;
+      } else {
+        childNode = renderData;
+      }
+    }
+  }
+
+  // ====================== Render ======================
   return <MemoCell {...props} ref={ref} onHover={onHover} startRow={startRow} endRow={endRow} />;
 });
-WrappedCell.displayName = 'WrappedCell';
 
-export default WrappedCell;
+RenderCell.displayName = 'RenderCell';
+
+export default RenderCell;
