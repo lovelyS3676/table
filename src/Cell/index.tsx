@@ -42,14 +42,14 @@ interface InternalCellProps<RecordType extends DefaultRecordType> extends HoverC
   record?: RecordType;
   /** `record` index. Not `column` index. */
   index?: number;
-  dataIndex?: DataIndex;
-  render?: ColumnType<RecordType>['render'];
   component?: CustomizeComponent;
   children?: React.ReactNode;
   colSpan?: number;
   rowSpan?: number;
   ellipsis?: CellEllipsisType;
   align?: AlignType;
+
+  cellProps?: CellType<RecordType>;
 
   shouldCellUpdate?: (record: RecordType, prevRecord: RecordType) => boolean;
 
@@ -73,10 +73,11 @@ interface InternalCellProps<RecordType extends DefaultRecordType> extends HoverC
   isSticky?: boolean;
 }
 
-export type CellProps<RecordType extends DefaultRecordType> = Omit<
-  InternalCellProps<RecordType>,
-  keyof HoverContextProps
->;
+export interface CellProps<RecordType extends DefaultRecordType>
+  extends Omit<InternalCellProps<RecordType>, keyof HoverContextProps> {
+  dataIndex?: DataIndex;
+  render?: ColumnType<RecordType>['render'];
+}
 
 function Cell<RecordType extends DefaultRecordType>(
   {
@@ -84,8 +85,6 @@ function Cell<RecordType extends DefaultRecordType>(
     className,
     record,
     index,
-    dataIndex,
-    render,
     children,
     component: Component = 'td',
     colSpan,
@@ -103,6 +102,8 @@ function Cell<RecordType extends DefaultRecordType>(
     rowType,
     isSticky,
 
+    cellProps,
+
     // Hover
     startRow,
     endRow,
@@ -118,27 +119,7 @@ function Cell<RecordType extends DefaultRecordType>(
   const supportSticky = React.useContext(StickyContext);
 
   // ==================== Child Node ====================
-  let cellProps: CellType<RecordType>;
-  let childNode: React.ReactNode;
-
-  if (validateValue(children)) {
-    childNode = children;
-  } else {
-    const value = getPathValue<object | React.ReactNode, RecordType>(record, dataIndex);
-
-    // Customize render node
-    childNode = value;
-    if (render) {
-      const renderData = render(value, record, index);
-
-      if (isRenderCell(renderData)) {
-        childNode = renderData.children;
-        cellProps = renderData.props;
-      } else {
-        childNode = renderData;
-      }
-    }
-  }
+  let childNode: React.ReactNode = children;
 
   // Not crash if final `childNode` is not validate ReactNode
   if (
@@ -310,7 +291,18 @@ const RenderCell = React.forwardRef((props: CellProps<any>, ref: React.Ref<any>)
   }
 
   // ====================== Render ======================
-  return <MemoCell {...props} ref={ref} onHover={onHover} startRow={startRow} endRow={endRow} />;
+  return (
+    <MemoCell
+      {...props}
+      cellProps={cellProps}
+      ref={ref}
+      onHover={onHover}
+      startRow={startRow}
+      endRow={endRow}
+    >
+      {childNode}
+    </MemoCell>
+  );
 });
 
 RenderCell.displayName = 'RenderCell';
